@@ -46,8 +46,8 @@ async function deleteExpiredCoupons() {
 
   // Schedule the deleteExpiredCoupons function to run every hour using cron
   const cron = require("node-cron");
-  cron.schedule("0 * * * *", () => {
-    deleteExpiredCoupons();
+  cron.schedule("* * * * *", () => {
+    //deleteExpiredCoupons();
   });
   
   module.exports = router;
