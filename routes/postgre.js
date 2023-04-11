@@ -274,26 +274,7 @@ router.post("/getNikkidata", async function (req, res) {
   const data = req.body;
   try {
     const query = {
-      text: " SELECT raiten_time,nikki_title,nikki_text FROM trn0012 WHERE user_cd = $1 And shop_nm ='memo' AND DATE (raiten_time) = CURRENT_DATE ORDER BY raiten_time",
-      values: [
-        data.user_cd, 
-      ],
-    };
-    const result = await client.query(query);
-    console.log(result.rows);
-    res.status(200).json(result.rows);
-  } catch (error) {
-    console.error(error);
-  }
-});
-
-//明日の予定
-router.post("/getNikkidata2", async function (req, res) {
-  console.log(req.body);
-  const data = req.body;
-  try {
-    const query = {
-      text: " SELECT raiten_time,nikki_title,nikki_text FROM trn0012 WHERE user_cd = $1 And shop_nm ='memo' AND DATE (raiten_time) = CURRENT_DATE + INTERVAL '1 day' ORDER BY raiten_time",
+      text: " SELECT raiten_time,nikki_title,nikki_text FROM trn0012 WHERE user_cd = $1 And shop_nm ='memo' AND raiten_time > CURRENT_TIMESTAMP ORDER BY raiten_time LIMIT 4",
       values: [
         data.user_cd, 
       ],
