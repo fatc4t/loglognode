@@ -306,6 +306,50 @@ router.post("/GetCardList", async function (req, res) {
   }
 });
 
+//make new card
+router.post("/MakeCard", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: "INSERT INTO mst0017 (updatetime,jan_no, card_nm, user_cd) VALUES  (CURRENT_TIMESTAMP, $1 , $2 ,$3 )",
+      values: [
+        data.jan_no,
+        data.card_nm,
+        data.user_cd,
+      ],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+//CardUpdate
+router.post("/UpdateCard", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: "UPDATE mst0017 SET jan_no = $1 ,card_nm = $2, updatetime=CURRENT_TIMESTAMP WHERE user_cd= $3 and jan_no= $4 and card_nm = $5",
+      values: [
+        data.jan_no,
+        data.card_nm,
+        data.user_cd,
+        data.where_jan_no,
+        data.where_card_nm,
+      ],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 //UserCard Login
 router.post("/CardUserLogin", async function (req, res) {
   console.log(req.body);
