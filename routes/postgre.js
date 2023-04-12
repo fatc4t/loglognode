@@ -312,7 +312,8 @@ router.post("/MakeCard", async function (req, res) {
   const data = req.body;
   try {
     const query = {
-      text: "INSERT INTO mst0017 (updatetime,jan_no, card_nm, user_cd) VALUES  (CURRENT_TIMESTAMP, $1 , $2 ,$3 )",
+      text: `INSERT INTO mst0017 (insuser_cd,insdatetime,upduser_cd,updatetime,jan_no, card_nm, user_cd) 
+                        VALUES  ($3,CURRENT_TIMESTAMP,$3,CURRENT_TIMESTAMP, $1 , $2 ,$3 )`,
       values: [
         data.jan_no,
         data.card_nm,
@@ -321,7 +322,22 @@ router.post("/MakeCard", async function (req, res) {
     };
     const result = await client.query(query);
     console.log(result.rows);
-    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+//delete card
+router.post("/DeleteCard", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: "delete from mst0017 where user_cd= $1 and jan_no = $2 and card_nm = $3",
+      values: [data.user_cd,data.jan_no,data.card_nm,],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
   } catch (error) {
     console.error(error);
   }
@@ -350,23 +366,26 @@ router.post("/UpdateCard", async function (req, res) {
   }
 });
 
-//UserCard Login
-router.post("/CardUserLogin", async function (req, res) {
+//Login
+router.post("/UserLogin", async function (req, res) {
   console.log(req.body);
   const data = req.body;
   try {
     const query = {
-      text: " SELECT * FROM trn0012 WHERE user_cd = '$1' AND DATE('$2') = CURRENT_DATE ",
-      values: [
-        data.user_cd, 
-        data.dateNow
-      ],
+      text: " SELECT * FROM mst0011 WHERE (cust_cd IS NOT NULL AND jan_no = $1) OR (cust_cd IS NULL AND user_phone = $1) AND user_pw = $2",
+      values: [data.id, data.password],
     };
+
     const result = await client.query(query);
-    console.log(result.rows);
-    res.status(200).json(result.rows);
+
+    if (result.rows.length > 0) {
+      console.log(result.rows);
+      res.status(200).json(result.rows); 
+    } else {
+      res.status(401).json({ message: "Invalid ID or password" });
+    }
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 });
-
