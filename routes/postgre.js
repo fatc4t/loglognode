@@ -147,7 +147,7 @@ router.post("/getMessagesAPI", async function (req, res) {
   try {
     const query = {
       text: `SELECT room_id , mst0011.user_nm, messages.user_cd, messages.shop_cd, TO_CHAR(messages.datesent, 'YYYY-MM-DD HH24:MI:SS.FF6') AS datesent      , messages.content
-      , messages.seen, messages.sender FROM MESSAGES left join mst0011 on mst0011.user_cd = messages.user_cd WHERE room_id = $1 ORDER BY datesent desc`,
+      , messages.seen, messages.sender FROM MESSAGES left join mst0011 on mst0011.user_cd = messages.user_cd WHERE room_id = $1 ORDER BY datesent ASC`,
       values: [data.room_id],
     };
     const result = await client.query(query);
@@ -375,9 +375,7 @@ router.post("/UserLogin", async function (req, res) {
       text: " SELECT * FROM mst0011 WHERE (cust_cd IS NOT NULL AND jan_no = $1) OR (cust_cd IS NULL AND user_phone = $1) AND user_pw = $2",
       values: [data.id, data.password],
     };
-
     const result = await client.query(query);
-
     if (result.rows.length > 0) {
       console.log(result.rows);
       res.status(200).json(result.rows); 
