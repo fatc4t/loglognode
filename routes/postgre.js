@@ -293,7 +293,7 @@ router.post("/GetCardList", async function (req, res) {
   const data = req.body;
   try {
     const query = {
-      text: "Select mst0017.updatetime,mst0017.jan_no,mst0017.card_nm,mst0017.now_point,mst0010.card_image from mst0017 LEFT JOIN mst0010 ON mst0017.shop_cd = mst0010.shop_cd where user_cd = $1 order by updatetime",
+      text: "Select mst0017.updatetime,mst0017.jan_no,mst0017.card_nm,mst0017.now_point,mst0010.card_image,mst0010.barcode_kbn from mst0017 LEFT JOIN mst0010 ON mst0017.shop_cd = mst0010.shop_cd where user_cd = $1 order by updatetime desc",
       values: [
         data.user_cd, 
       ],
@@ -385,5 +385,24 @@ router.post("/UserLogin", async function (req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+//Get TempoInfo
+router.post("/GetTempoInfo", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: "SELECT shop_nm,url_sns1,url_sns2,url_sns3,url_sns4,url_hp,thumbnail1,thumbnail2,thumbnail3,holiday1,holiday2,holiday3,free_text,logo,opentime1,closetime1,opentime2,closetime2,shop_add3,shop_add2,shop_add1,shop_postcd FROM mst0010 WHERE mst0010.shop_cd = $1 ",
+      values: [
+        data.shop_cd,
+      ],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
   }
 });
