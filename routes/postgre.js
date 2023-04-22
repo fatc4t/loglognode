@@ -1,5 +1,5 @@
 var router = require("express").Router();
-
+const multer = require('multer');
 const server = require("http").createServer();
 const io = require("socket.io")(server);
 
@@ -215,27 +215,50 @@ router.post("/updateUserInfo", async function (req, res) {
   } else {
     gender = "02";
   }
+
   try {
     const query = {
-      text: "UPDATE mst0011 SET user_nm = $2,user_kn = $3,user_phone = $4,user_pw = $5,add2 = $6,user_mail = $7,gender = $8,add1 = $9,birthday = $10 WHERE user_cd = $1",
+      text: "SELECT user_phone FROM mst0011 WHERE user_phone = $1 AND user_cd != $2",
       values: [
-        data.user_cd,
-        data.user_nm,
-        data.user_kn,
         data.user_phone,
-        data.user_pw,
-        data.add2,
-        data.user_mail,
-        gender,
-        data.add1,
-        data.birthday,
+        data.user_cd,
       ],
     };
     const result = await client.query(query);
+
+    if (result.rowCount > 0) {
+      console.log("already have");
+      res.status(400).json({ error: "already have" });
+    } else {
+      try {
+        const query2 = {
+          text: "UPDATE mst0011 SET user_nm = $2,user_kn = $3,user_phone = $4,user_pw = $5,add2 = $6,user_mail = $7,gender = $8,add1 = $9,birthday = $10 WHERE user_cd = $1",
+          values: [
+            data.user_cd,
+            data.user_nm,
+            data.user_kn,
+            data.user_phone,
+            data.user_pw,
+            data.add2,
+            data.user_mail,
+            gender,
+            data.add1,
+            data.birthday,
+          ],
+        };
+        const result2 = await client.query(query2);
+        res.status(200).json({ message: "Ok" });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "server error" });
+      }
+    }
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: "server error" });
   }
 });
+
 
 router.post("/GetCardImage", async function (req, res) {
   console.log(req.body);
@@ -293,7 +316,8 @@ router.post("/GetCardList", async function (req, res) {
   const data = req.body;
   try {
     const query = {
-      text: "Select mst0017.updatetime,mst0017.jan_no,mst0017.card_nm,mst0017.now_point,mst0010.card_image,mst0010.barcode_kbn from mst0017 LEFT JOIN mst0010 ON mst0017.shop_cd = mst0010.shop_cd where user_cd = $1 order by updatetime desc",
+      text: `Select mst0017.updatetime, mst0017.jan_no, mst0017.shop_cd, mst0017.card_nm, mst0017.up_date,mst0017.now_point, mst0017.card_image, mst0010.barcode_kbn 
+      from mst0017 LEFT JOIN mst0010 ON mst0017.shop_cd = mst0010.shop_cd where user_cd = $1 order by updatetime desc`,
       values: [
         data.user_cd, 
       ],
@@ -328,20 +352,39 @@ router.post("/MakeCard", async function (req, res) {
 });
 
 //delete card
+const fs = require('fs');
+
 router.post("/DeleteCard", async function (req, res) {
+  const originalname = req.body.filename;
+  
   console.log(req.body);
   const data = req.body;
   try {
     const query = {
       text: "delete from mst0017 where user_cd= $1 and jan_no = $2 and card_nm = $3",
-      values: [data.user_cd,data.jan_no,data.card_nm,],
+      values: [data.user_cd, data.jan_no, data.card_nm],
     };
     const result = await client.query(query);
     console.log(result.rows);
+
+    // File deletion
+    const imagePath = `image/CardImage/${originalname}`;
+    fs.unlink(imagePath, (err) => {
+      if (err) {
+        console.error(`Error deleting file: ${originalname}`, err);
+      } else {
+        console.log(`File deleted: ${originalname}`);
+      }
+    });
+
+    res.status(200).json({ message: 'Card and image deleted successfully' });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
 
 //CardUpdate
 router.post("/UpdateCard", async function (req, res) {
@@ -403,6 +446,118 @@ router.post("/GetTempoInfo", async function (req, res) {
     console.log(result.rows);
     res.status(200).json(result.rows);
   } catch (error) {
+    console.error(error);
+  }
+});
+
+//Get TempoLogo
+router.post("/GetTempoLogo", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: "SELECT raiten_time, shop_cd FROM trn0012 WHERE shop_cd <> '0000' and user_cd = $1 ORDER BY raiten_time DESC LIMIT 1",
+      values: [
+        data.user_cd,
+      ],
+    };
+    const result = await client.query(query);
+    console.log(result.rows[0].shop_cd);
+    try {
+      const query2 = {
+        text: "Select logo,shop_cd from mst0010 where shop_cd= $1 ",
+        values: [
+          result.rows[0].shop_cd,
+        ],
+      };
+      const result2 = await client.query(query2);
+      console.log(result2.rows);
+    res.status(200).json(result2.rows);
+    } catch (error) {
+      console.error(error);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+// card Image upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'image/CardImage/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
+
+const upload = multer({ storage: storage });
+
+router.post('/upload', upload.single('file'), async (req, res) => {
+  console.log(req.file);
+
+  const originalname = req.file.originalname;
+  const user_cd = originalname.substring(0, 8);
+  const jan_no = originalname.substring(8, originalname.lastIndexOf('.'));
+
+  try {
+    const query = {
+      text: "UPDATE mst0017 SET card_image = $1, updatetime = CURRENT_TIMESTAMP WHERE user_cd = $2 and jan_no = $3",
+      values: [
+        originalname,
+        user_cd,
+        jan_no,
+      ],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+//recode raiten
+router.post("/RecodeRaiten", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: "select * from mst0010 where shop_cd = $1 ",
+      values: [data.shop_cd],
+    };
+    const result = await client.query(query);
+    const shop_nm = result.rows.shop_cd;
+
+    //lastdate
+    const latestDateQuery = {
+      text: "SELECT raiten_time FROM trn0012 WHERE shop_cd = $1 and user_cd = $2 ORDER BY raiten_time DESC LIMIT 1",
+      values: [data.shop_cd,data.user_cd],
+    };
+    const latestDateResult = await client.query(latestDateQuery);
+    const latestDate = latestDateResult.rows[0]?.raiten_time;
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    if (!latestDate || latestDate.setHours(0, 0, 0, 0) < currentDate) {
+      try {
+        const query2 = {
+          text: `INSERT INTO trn0012 (insuser_cd,insdatetime,upduser_cd,updatetime,user_cd,shop_cd,shop_nm,raiten_time)
+                              VALUES ( $1 ,CURRENT_TIMESTAMP, $1 ,CURRENT_TIMESTAMP, $1 , $2 ,$3,CURRENT_TIMESTAMP) `,
+          values: [data.user_cd,data.shop_cd,shop_nm],
+        };
+
+        const result2 = await client.query(query2);
+        res.status(200).json('raiten ok');
+    
+        }catch (error) {
+          console.error(error);
+        }
+      }else{
+        res.status(200).json('already done');
+      }
+    }
+     catch (error) {
     console.error(error);
   }
 });
