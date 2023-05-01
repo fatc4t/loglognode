@@ -19,4 +19,10 @@ http.listen(process.env.PORT, function() {
     console.log('listening on 8889')
 });
 
+// 뷰 연결하는곳 
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
 
+
+// 챗봇연결부분 하단

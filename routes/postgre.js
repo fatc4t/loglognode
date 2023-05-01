@@ -206,6 +206,22 @@ router.post("/getUserInfo", async function (req, res) {
   }
 });
 
+router.post("/getUserName", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: " select user_nm from mst0011 where user_cd = $1 ",
+      values: [data.user_cd],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error(error);
+  }
+});
+
 router.post("/updateUserInfo", async function (req, res) {
   console.log(req.body);
   const data = req.body;
@@ -316,7 +332,7 @@ router.post("/GetCardList", async function (req, res) {
   const data = req.body;
   try {
     const query = {
-      text: `Select mst0017.updatetime, mst0017.jan_no, mst0017.shop_cd, mst0017.card_nm, mst0017.up_date,mst0017.now_point, mst0017.card_image, mst0010.barcode_kbn 
+      text: `Select mst0017.updatetime, mst0017.jan_no, mst0017.shop_cd, mst0017.card_nm, mst0017.e_date, mst0017.up_date,mst0017.now_point, mst0017.card_image, mst0010.barcode_kbn 
       from mst0017 LEFT JOIN mst0010 ON mst0017.shop_cd = mst0010.shop_cd where user_cd = $1 order by updatetime desc`,
       values: [
         data.user_cd, 
@@ -528,8 +544,7 @@ router.post("/RecodeRaiten", async function (req, res) {
       values: [data.shop_cd],
     };
     const result = await client.query(query);
-    const shop_nm = result.rows.shop_cd;
-
+    const shop_nm =await result.rows[0].shop_nm;
     //lastdate
     const latestDateQuery = {
       text: "SELECT raiten_time FROM trn0012 WHERE shop_cd = $1 and user_cd = $2 ORDER BY raiten_time DESC LIMIT 1",
