@@ -350,20 +350,33 @@ router.post("/GetCardList", async function (req, res) {
 router.post("/MakeCard", async function (req, res) {
   console.log(req.body);
   const data = req.body;
+
   try {
-    const query = {
-      text: `INSERT INTO mst0017 (insuser_cd,insdatetime,upduser_cd,updatetime,jan_no, card_nm, user_cd) 
-                        VALUES  ($3,CURRENT_TIMESTAMP,$3,CURRENT_TIMESTAMP, $1 , $2 ,$3 )`,
-      values: [
-        data.jan_no,
-        data.card_nm,
-        data.user_cd,
-      ],
+    const checkQuery = {
+      text: 'SELECT * FROM mst0017 WHERE jan_no = $1 AND card_nm = $2 AND user_cd = $3',
+      values: [data.jan_no, data.card_nm, data.user_cd],
     };
-    const result = await client.query(query);
-    console.log(result.rows);
+    const checkResult = await client.query(checkQuery);
+
+    if (checkResult.rowCount > 0) {
+      res.status(400).json({ error: 'Card with the same name and number already exists' });
+    } else {
+      const query = {
+        text: `INSERT INTO mst0017 (insuser_cd,insdatetime,upduser_cd,updatetime,jan_no, card_nm, user_cd) 
+                          VALUES  ($3,CURRENT_TIMESTAMP,$3,CURRENT_TIMESTAMP, $1 , $2 ,$3 )`,
+        values: [
+          data.jan_no,
+          data.card_nm,
+          data.user_cd,
+        ],
+      };
+      const result = await client.query(query);
+      console.log(result.rows);
+      res.status(200).json({ message: 'Card created successfully' });
+    }
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -509,12 +522,26 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+const throttleMap = new Map();
+
 router.post('/upload', upload.single('file'), async (req, res) => {
   console.log(req.file);
 
   const originalname = req.file.originalname;
   const user_cd = originalname.substring(0, 8);
   const jan_no = originalname.substring(8, originalname.lastIndexOf('.'));
+
+  // Throttling
+  const throttleKey = `${user_cd}-${jan_no}`;
+  const now = Date.now();
+  const lastRequestTime = throttleMap.get(throttleKey) || 0;
+  const throttleInterval = 10000; // 10 seconds
+
+  if (now - lastRequestTime < throttleInterval) {
+    return res.status(429).json({ error: 'Too many requests, please try again later' });
+  }
+
+  throttleMap.set(throttleKey, now);
 
   try {
     const query = {
@@ -533,6 +560,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 //recode raiten
 router.post("/RecodeRaiten", async function (req, res) {
