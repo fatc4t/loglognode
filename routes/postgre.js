@@ -145,13 +145,20 @@ router.post("/getMessagesAPI", async function (req, res) {
   const data = req.body;
   console.log(data.room_id);
   try {
+    //--add message thumbnail K(2023/05)
     const query = {
-      text: `SELECT room_id , mst0011.user_nm, messages.user_cd, messages.shop_cd, TO_CHAR(messages.datesent, 'YYYY-MM-DD HH24:MI:SS.FF6') AS datesent      , messages.content
-      , messages.seen, messages.sender FROM MESSAGES left join mst0011 on mst0011.user_cd = messages.user_cd WHERE room_id = $1 ORDER BY datesent ASC`,
+      text:
+        `SELECT room_id , mst0011.user_nm, messages.user_cd, messages.shop_cd, TO_CHAR(messages.datesent, 'YYYY- MM - DD HH24: MI: SS.FF6') AS datesent, messages.content, messages.seen, messages.sender , 
+        msgmain.thumbnail1  
+      FROM MESSAGES LEFT JOIN mst0011 ON mst0011.user_cd = messages.user_cd 
+        LEFT JOIN(select distinct on(msg_text) * from mst0013) msgmain ON msgmain.msg_text = messages.content
+        WHERE room_id = $1 ORDER BY datesent ASC`,
       values: [data.room_id],
     };
+
+
     const result = await client.query(query);
-    //console.log(result.rows);
+    console.log(result.rows);
     res.status(200).json(result.rows);
   } catch (error) {
     console.error(error);
@@ -315,7 +322,7 @@ router.post("/getNikkidata", async function (req, res) {
     const query = {
       text: " SELECT raiten_time,nikki_title,nikki_text FROM trn0012 WHERE user_cd = $1 And shop_nm ='memo' AND raiten_time > CURRENT_TIMESTAMP ORDER BY raiten_time LIMIT 4",
       values: [
-        data.user_cd, 
+        data.user_cd,
       ],
     };
     const result = await client.query(query);
@@ -335,7 +342,7 @@ router.post("/GetCardList", async function (req, res) {
       text: `Select mst0017.updatetime, mst0017.jan_no, mst0017.shop_cd, mst0017.card_nm, mst0017.e_date, mst0017.up_date,mst0017.now_point, mst0017.card_image, mst0010.barcode_kbn 
       from mst0017 LEFT JOIN mst0010 ON mst0017.shop_cd = mst0010.shop_cd where user_cd = $1 order by updatetime desc`,
       values: [
-        data.user_cd, 
+        data.user_cd,
       ],
     };
     const result = await client.query(query);
@@ -372,7 +379,7 @@ const fs = require('fs');
 
 router.post("/DeleteCard", async function (req, res) {
   const originalname = req.body.filename;
-  
+
   console.log(req.body);
   const data = req.body;
   try {
@@ -437,7 +444,7 @@ router.post("/UserLogin", async function (req, res) {
     const result = await client.query(query);
     if (result.rows.length > 0) {
       console.log(result.rows);
-      res.status(200).json(result.rows); 
+      res.status(200).json(result.rows);
     } else {
       res.status(401).json({ message: "Invalid ID or password" });
     }
@@ -488,7 +495,7 @@ router.post("/GetTempoLogo", async function (req, res) {
       };
       const result2 = await client.query(query2);
       console.log(result2.rows);
-    res.status(200).json(result2.rows);
+      res.status(200).json(result2.rows);
     } catch (error) {
       console.error(error);
     }
@@ -544,11 +551,11 @@ router.post("/RecodeRaiten", async function (req, res) {
       values: [data.shop_cd],
     };
     const result = await client.query(query);
-    const shop_nm =await result.rows[0].shop_nm;
+    const shop_nm = await result.rows[0].shop_nm;
     //lastdate
     const latestDateQuery = {
       text: "SELECT raiten_time FROM trn0012 WHERE shop_cd = $1 and user_cd = $2 ORDER BY raiten_time DESC LIMIT 1",
-      values: [data.shop_cd,data.user_cd],
+      values: [data.shop_cd, data.user_cd],
     };
     const latestDateResult = await client.query(latestDateQuery);
     const latestDate = latestDateResult.rows[0]?.raiten_time;
@@ -559,20 +566,20 @@ router.post("/RecodeRaiten", async function (req, res) {
         const query2 = {
           text: `INSERT INTO trn0012 (insuser_cd,insdatetime,upduser_cd,updatetime,user_cd,shop_cd,shop_nm,raiten_time)
                               VALUES ( $1 ,CURRENT_TIMESTAMP, $1 ,CURRENT_TIMESTAMP, $1 , $2 ,$3,CURRENT_TIMESTAMP) `,
-          values: [data.user_cd,data.shop_cd,shop_nm],
+          values: [data.user_cd, data.shop_cd, shop_nm],
         };
 
         const result2 = await client.query(query2);
         res.status(200).json('raiten ok');
-    
-        }catch (error) {
-          console.error(error);
-        }
-      }else{
-        res.status(200).json('already done');
+
+      } catch (error) {
+        console.error(error);
       }
+    } else {
+      res.status(200).json('already done');
     }
-     catch (error) {
+  }
+  catch (error) {
     console.error(error);
   }
 });
