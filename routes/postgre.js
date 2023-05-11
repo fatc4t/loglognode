@@ -186,6 +186,48 @@ router.post("/updateLikedRooms", async function (req, res) {
   }
 });
 
+//INSERT LIKED COUPONS
+router.post("/likeCoupon", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: "INSERT INTO coupons_liked (unique_coupon_cd, user_cd) VALUES ($1,$2)",
+      values: [
+        data.unique_coupon_cd,
+        data.user_cd,
+      ],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
+    res.status(200).json({ message: 'Coupon liked!' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'An error occurred while liking the coupon.' });
+  }
+});
+
+//DELETE LIKED COUPONS
+router.post("/unlikeCoupon", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = {
+      text: "DELETE FROM coupons_liked WHERE unique_coupon_cd =$1 AND user_cd =$2",
+      values: [
+        data.unique_coupon_cd,
+        data.user_cd,
+      ],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
+    res.status(200).json({ message: 'Coupon unliked!' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'An error occurred while unliking the coupon.' });
+  }
+});
+
 router.post("/getraitenAPI", async function (req, res) {
   console.log(req.body);
   const data = req.body;
