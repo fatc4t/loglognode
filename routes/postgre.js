@@ -452,6 +452,39 @@ router.post("/MakeCard", async function (req, res) {
   }
 });
 
+//make new Tempo card
+router.post("/MakeTempoCard", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query = { 
+      text: 'select jan_no from mst0017 where jan_no = $1 and shop_cd IS NOT NULL and up_date = $2 and user_cd IS NULL  ',
+      values: [data.jan_no, data.up_date,],
+    };
+    const result = await client.query(query);
+    console.log(result.rows);
+    if (result.rows.length > 0) {
+      try {
+        const query2 = { 
+          text: 'update mst0017 set user_cd = $1 where jan_no = $2 and shop_cd IS NOT NULL and up_date = $3 and user_cd IS NULL  ',
+          values: [data.user_cd,data.jan_no, data.up_date,],
+        };
+        const result2 = await client.query(query2);
+        console.log(result2.rows);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+      res.status(200).json({ message: 'Card created successfully' });
+    } else {
+      res.status(200).json({ message: 'No results found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 //delete card
 const fs = require('fs');
 
