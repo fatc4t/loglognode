@@ -192,7 +192,9 @@ router.post("/likeCoupon", async function (req, res) {
   const data = req.body;
   try {
     const query = {
-      text: "INSERT INTO coupons_liked (unique_coupon_cd, user_cd) VALUES ($1,$2)",
+      text: `INSERT INTO coupons_liked (unique_coupon_cd, user_cd) 
+             VALUES ($1,$2) 
+             ON CONFLICT (unique_coupon_cd, user_cd) DO NOTHING`, // sanggi add
       values: [
         data.unique_coupon_cd,
         data.user_cd,
