@@ -473,7 +473,7 @@ router.post("/MakeTempoCard", async function (req, res) {
         console.log(result2.rows);
       } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
+        
       }
       res.status(200).json({ message: 'Card created successfully' });
     } else {
