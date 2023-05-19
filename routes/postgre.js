@@ -709,3 +709,41 @@ router.post("/RecodeRaiten", async function (req, res) {
     console.error(error);
   }
 });
+
+// likesList function
+
+router.post("/GetLikesList", async function (req, res) {
+  console.log(req.body);
+  const data = req.body;
+  try {
+    const query1 = {
+      text: `SELECT c.*, cu.* FROM coupons AS c JOIN (SELECT unique_coupon_cd FROM coupons_liked WHERE user_cd = $1) AS cl ON c.unique_coupon_cd = cl.unique_coupon_cd LEFT JOIN coupons_used AS cu ON c.unique_coupon_cd = cu.unique_coupon_cd;`,
+      values: [
+        data.user_cd,
+      ],
+    };
+    const result1 = await client.query(query1);
+
+    const query2 = {
+      text: `SELECT m.* FROM messages AS m JOIN (SELECT room_id FROM rooms WHERE user_cd = $1 AND liked = '1') AS r ON m.room_id = r.room_id;`,
+      values: [
+        data.user_cd,
+      ],
+    };
+    const result2 = await client.query(query2);
+
+    const response = {
+      coupons: result1.rows,
+      messages: result2.rows
+    };
+
+    console.log(response);
+    res.status(200).json(response);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
+
