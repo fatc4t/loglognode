@@ -717,7 +717,9 @@ router.post("/GetLikesList", async function (req, res) {
   const data = req.body;
   try {
     const query1 = {
-      text: `SELECT c.*, cu.* FROM coupons AS c JOIN (SELECT unique_coupon_cd FROM coupons_liked WHERE user_cd = $1) AS cl ON c.unique_coupon_cd = cl.unique_coupon_cd LEFT JOIN coupons_used AS cu ON c.unique_coupon_cd = cu.unique_coupon_cd;`,
+      text: `SELECT c.*, cu.*, mst0010.* FROM coupons AS c JOIN (SELECT unique_coupon_cd FROM coupons_liked WHERE user_cd = $1) AS cl ON c.unique_coupon_cd = cl.unique_coupon_cd
+      LEFT JOIN coupons_used AS cu ON c.unique_coupon_cd = cu.unique_coupon_cd
+      LEFT JOIN mst0010 ON mst0010.shop_cd = c.shop_cd;`,
       values: [
         data.user_cd,
       ],
