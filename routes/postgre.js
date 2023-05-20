@@ -717,7 +717,7 @@ router.post("/GetLikesList", async function (req, res) {
   const data = req.body;
   try {
     const query1 = {
-      text: `SELECT c.*, cu.*, mst0010.* FROM coupons AS c JOIN (SELECT unique_coupon_cd FROM coupons_liked WHERE user_cd = $1) AS cl ON c.unique_coupon_cd = cl.unique_coupon_cd
+      text: `SELECT c.*, cu.*, mst0010.shop_nm FROM coupons AS c JOIN (SELECT unique_coupon_cd FROM coupons_liked WHERE user_cd = $1) AS cl ON c.unique_coupon_cd = cl.unique_coupon_cd
       LEFT JOIN coupons_used AS cu ON c.unique_coupon_cd = cu.unique_coupon_cd
       LEFT JOIN mst0010 ON mst0010.shop_cd = c.shop_cd;`,
       values: [
@@ -727,7 +727,8 @@ router.post("/GetLikesList", async function (req, res) {
     const result1 = await client.query(query1);
 
     const query2 = {
-      text: `SELECT m.* FROM messages AS m JOIN (SELECT room_id FROM rooms WHERE user_cd = $1 AND liked = '1') AS r ON m.room_id = r.room_id;`,
+      text: `SELECT m.*, s.* FROM messages AS m JOIN (SELECT room_id FROM rooms WHERE user_cd = $1 AND liked = '1' ) AS r ON m.room_id = r.room_id
+      LEFT JOIN mst0010 AS s ON m.shop_cd = s.shop_cd;`,
       values: [
         data.user_cd,
       ],
